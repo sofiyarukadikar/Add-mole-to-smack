@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smack the Mole</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: Arial, sans-serif; 
+  background: url("bg.png") center/cover no-repeat;
+  image-rendering: pixelated;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      cursor: url("hammer.png"), auto;
+    }
+.bg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+    .game-wrapper {
+      width: 950px;
+      max-width: 95vw;
+      background: #ffffff;
+      border: 4px solid #2f2f2f;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+      position: relative;
+    }
+
+    .top-bar {
+      height: 110px;
+      background: #ffefb5;
+      border-bottom: 4px solid #2f2f2f;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 28px;
+      gap: 16px;
+    }
+
+    .title-block h1 {
+      font-size: 2rem;
+      color: #4b2c16;
+      margin-bottom: 8px;
+    }
+
+    .title-block p {
+      font-size: 0.95rem;
+      color: #6c4b2c;
+    }
+
+    .stats {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .stat-box {
+      min-width: 120px;
+      background: #fff8dc;
+      border: 3px solid #2f2f2f;
+      border-radius: 16px;
+      padding: 10px 16px;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: #6d5738;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #2f2f2f;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      border: none;
+      background: #ff8f5a;
+      color: white;
+      font-weight: bold;
+      padding: 12px 18px;
+      border-radius: 14px;
+      font-size: 1rem;
+      cursor: pointer;
+      border: 3px solid #2f2f2f;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      background: #ff7840;
+    }
+
+    button:active {
+      transform: scale(0.96);
+    }
+
+    .game-area {
+      position: relative;
+      height: 560px;
+      background:url("game.png")/cover no-repeat;
+      padding: 30px;
+    }
+
+    .grid {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 26px 18px;
+      align-items: end;
+      justify-items: center;
+    }
+
+    .hole-wrap {
+      position: relative;
+      width: 210px;
+      height: 200px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+    }
+
+    .mole {
+      position: absolute;
+      bottom: 62px;
+      width: 110px;
+      height: 110px;
+      object-fit: contain;
+      transform: translateY(100px);
+      transition: transform 0.22s ease;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .hole-wrap.active .mole {
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .hole-wrap.hit .mole {
+      transform: translateY(0) scale(0.92);
+    }
+
+    .hole {
+      position: relative;
+      width: 180px;
+      z-index: 2;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .feedback {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(47, 47, 47, 0.88);
+      color: white;
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-weight: bold;
+      font-size: 1rem;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: none;
+    }
+
+    .feedback.show {
+      opacity: 1;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 20;
+    }
+
+    .overlay.hidden {
+      display: none;
+    }
+
+    .card {
+      width: 420px;
+      max-width: 90%;
+      background: #fff8dc;
+      border: 4px solid #2f2f2f;
+      border-radius: 24px;
+      padding: 28px;
+      text-align: center;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .card h2 {
+      margin-bottom: 12px;
+      color: #4b2c16;
+      font-size: 2rem;
+    }
+
+    .card p {
+      color: #6c4b2c;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .card .big-score {
+      font-size: 2.6rem;
+      font-weight: bold;
+      color: #ff6b35;
+      margin-bottom: 18px;
+    }
+
+    @media (max-width: 900px) {
+      .top-bar {
+        height: auto;
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .stats {
+        justify-content: center;
+      }
+
+      .game-area {
+        height: auto;
+      }
+
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: auto;
+        padding-bottom: 20px;
+      }
+
+      .hole-wrap {
+        width: 180px;
+      }
+
+      .hole {
+        width: 150px;
+      }
+
+      .mole {
+        width: 95px;
+        height: 95px;
+        bottom: 54px;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .title-block h1 {
+        font-size: 1.6rem;
+      }
+    }
+  </style>
+</head>
+<body>
+    
+    <img src="bg.png" class="bg">
+  <div class="game-wrapper">
+    <div class="top-bar">
+      <div class="title-block">
+        <h1>Smack the Mole</h1>
+        <p>Hit the mole before it hides again!</p>
+      </div>
+
+      <div class="stats">
+        <div class="stat-box">
+          <div class="stat-label">Score</div>
+          <div class="stat-value" id="score">0</div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-label">Time</div>
+          <div class="stat-value" id="time">30</div>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-label">Best</div>
+          <div class="stat-value" id="best">0</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="startBtn">Start Game</button>
+        <button id="resetBtn">Reset</button>
+      </div>
+    </div>
+
+    <div class="game-area">
+      <div class="feedback" id="feedback">+1</div>
+
+      <div class="grid" id="grid">
+        <div class="hole-wrap" data-index="0">
+          <img class="mole" src="mole.png" alt="mole" />
+          <img class="hole" src="hole.png" alt="hole" />
+        </div>
+
+        <div class="hole-wrap" data-index="1">
+          <img class="mole" src="mole.png" alt="mole" />
+          <img class="hole" src="hole.png" alt="hole" />
+        </div>
+
+        <div class="hole-wrap" data-index="2">
+          <img class="mole" src="mole.png" alt="mole" />
+          <img class="hole" src="hole.png" alt="hole" />
+        </div>
+
+        <div class="hole-wrap" data-index="3">
+          <img class="mole" src="mole.png" alt="mole" />
+          <img class="hole" src="hole.png" alt="hole" />
+        </div>
+
+        <div class="hole-wrap" data-index="4">
+          <img class="mole" src="mole.png" alt="mole" />
+          <img class="hole" src="hole.png" alt="hole" />
+        </div>
+
+        <div class="hole-wrap" data-index="5">
+          <img class="mole" src="mole.png" alt="mole" />
+          <img class="hole" src="hole.png" alt="hole" />
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay" id="overlay">
+      <div class="card">
+        <h2>Ready?</h2>
+        <p>Smack as many moles as you can before time runs out.</p>
+        <button id="overlayStartBtn">Play Now</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const holes = document.querySelectorAll(".hole-wrap");
+    const scoreEl = document.getElementById("score");
+    const timeEl = document.getElementById("time");
+    const bestEl = document.getElementById("best");
+    const feedbackEl = document.getElementById("feedback");
+    const startBtn = document.getElementById("startBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const overlay = document.getElementById("overlay");
+    const overlayStartBtn = document.getElementById("overlayStartBtn");
+
+    let score = 0;
+    let timeLeft = 30;
+    let gameRunning = false;
+    let gameTimer = null;
+    let moleTimer = null;
+    let activeHole = null;
+    let bestScore = Number(localStorage.getItem("moleBest")) || 0;
+
+    bestEl.textContent = bestScore;
+
+    function randomHole() {
+      const index = Math.floor(Math.random() * holes.length);
+      return holes[index];
+    }
+
+    function clearActiveMole() {
+      holes.forEach(hole => {
+        hole.classList.remove("active", "hit");
+        const moleImg = hole.querySelector(".mole");
+        moleImg.src = "mole.png";
+        moleImg.dataset.hit = "false";
+      });
+      activeHole = null;
+    }
+
+    function showMole() {
+      if (!gameRunning) return;
+
+      clearActiveMole();
+
+      const hole = randomHole();
+      activeHole = hole;
+      hole.classList.add("active");
+
+      const moleImg = hole.querySelector(".mole");
+      moleImg.dataset.hit = "false";
+
+      const visibleTime = Math.floor(Math.random() * 500) + 650;
+
+      moleTimer = setTimeout(() => {
+        if (activeHole === hole) {
+          hole.classList.remove("active");
+          activeHole = null;
+        }
+        showMole();
+      }, visibleTime);
+    }
+
+    function updateScore(value) {
+      score += value;
+      scoreEl.textContent = score;
+      feedbackEl.textContent = `+${value}`;
+      feedbackEl.classList.add("show");
+
+      setTimeout(() => {
+        feedbackEl.classList.remove("show");
+      }, 250);
+    }
+
+    function endGame() {
+      gameRunning = false;
+      clearTimeout(gameTimer);
+      clearTimeout(moleTimer);
+      clearActiveMole();
+
+      if (score > bestScore) {
+        bestScore = score;
+        localStorage.setItem("moleBest", bestScore);
+        bestEl.textContent = bestScore;
+      }
+
+      overlay.classList.remove("hidden");
+      overlay.querySelector(".card").innerHTML = `
+        <h2>Time's Up!</h2>
+        <p>Your final score:</p>
+        <div class="big-score">${score}</div>
+        <button id="playAgainBtn">Play Again</button>
+      `;
+
+      document.getElementById("playAgainBtn").addEventListener("click", startGame);
+    }
+
+    function startCountdown() {
+      gameTimer = setInterval(() => {
+        timeLeft--;
+        timeEl.textContent = timeLeft;
+
+        if (timeLeft <= 0) {
+          clearInterval(gameTimer);
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function startGame() {
+      clearTimeout(gameTimer);
+      clearTimeout(moleTimer);
+
+      score = 0;
+      timeLeft = 30;
+      gameRunning = true;
+
+      scoreEl.textContent = score;
+      timeEl.textContent = timeLeft;
+      overlay.classList.add("hidden");
+
+      showMole();
+      startCountdown();
+    }
+
+    function resetGame() {
+      gameRunning = false;
+      clearInterval(gameTimer);
+      clearTimeout(moleTimer);
+      score = 0;
+      timeLeft = 30;
+      scoreEl.textContent = score;
+      timeEl.textContent = timeLeft;
+      clearActiveMole();
+      overlay.classList.remove("hidden");
+      overlay.querySelector(".card").innerHTML = `
+        <h2>Ready?</h2>
+        <p>Smack as many moles as you can before time runs out.</p>
+        <button id="overlayStartBtn">Play Now</button>
+      `;
+      document.getElementById("overlayStartBtn").addEventListener("click", startGame);
+    }
+
+    holes.forEach(hole => {
+      const moleImg = hole.querySelector(".mole");
+
+      moleImg.addEventListener("click", () => {
+        if (!gameRunning) return;
+        if (!hole.classList.contains("active")) return;
+        if (moleImg.dataset.hit === "true") return;
+
+        moleImg.dataset.hit = "true";
+        hole.classList.add("hit");
+        moleImg.src = "hit.png";
+        updateScore(1);
+
+        setTimeout(() => {
+          hole.classList.remove("active", "hit");
+          moleImg.src = "mole.png";
+          activeHole = null;
+        }, 180);
+      });
+    });
+
+    startBtn.addEventListener("click", startGame);
+    resetBtn.addEventListener("click", resetGame);
+    overlayStartBtn.addEventListener("click", startGame);
+  </script>
+</body>
+</html>
